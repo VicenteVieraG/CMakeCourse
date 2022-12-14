@@ -12,8 +12,6 @@ cmake_minimum_required(VERSION 3.24.1)
 
 project(CppProjectTemplate VERSION 1.0.0 LANGUAGES C CXX)
 
-add_library(Library STATIC myLib.cpp)
-
-add_executable(main main.cpp)
-
-target_link_libraries(main PUBLIC Library)
+#src must be declared first because app depends on src
+add_subdirectory(src)
+add_subdirectory(app)

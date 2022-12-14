@@ -5,6 +5,7 @@ if($null -eq $args[0]){
     cmake ..
     cmake --build .
     Set-Location ..
+    ./build/debug/main.exe
 }else{#Build with arguments
     Set-Location build
     cmake ..
@@ -32,5 +33,3 @@ if($null -eq $args[0]){
     Invoke-Expression $build
     Set-Location ..
 }
-
-#./build/debug/main.exe
