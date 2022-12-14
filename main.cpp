@@ -1,7 +1,8 @@
-#include <iostream>
+#include "myLib.h"
 
 int main(int argc, char** argv){
-    std::cout<<"Hola Crayola"<<std::endl;
+
+    printHelloWorld();
 
     return 0;
 }
