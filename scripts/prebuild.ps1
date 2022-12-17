@@ -3,7 +3,7 @@
 #Get the Root Directory
 [string]$ROOT_DIRECTORY #= (Split-Path (Split-Path $MyInvocation.MyCommand.Path -Parent) -Parent)
 [string]$FILE_DIRECTORY = Split-Path $MyInvocation.MyCommand.Path -Parent
-$DIR_INFO = Get-ChildItem -Path $FILE_DIRECTORY | Measure-Object
+[int32]$DIR_INFO = (Get-ChildItem -Path $FILE_DIRECTORY | Measure-Object).Count
 #Folders and files to be Created
 [string[]]$MAIN_FOLDERS = @("app", "build", "includes", "scripts", "src")
 [string[]]$SCRIPTS_FILES = @("build.ps1", "run.ps1")
@@ -42,7 +42,7 @@ add_executable(${EXECUTABLE_NAME} main.cpp)
 '@
 
 #This creates a New Project
-if($DIR_INFO.Count -eq 1){
+if($DIR_INFO){
     #It´s an Empty Folder
     $ROOT_DIRECTORY = $FILE_DIRECTORY
 
@@ -75,3 +75,27 @@ if($DIR_INFO.Count -eq 1){
     Write-Host "[Prebuild]: Prebuild Completed." -BackgroundColor Yellow -ForegroundColor Black
     #Move-Item -Path $ROOT_DIRECTORY/prebuild.ps1 -Destination $ROOT_DIRECTORY/scripts
 }
+
+#Check if the Folders allready exist
+# if(!(Test-Path -Path ../build)){
+#     New-Item -Path ../ -Name build -ItemType directory
+#     Write-Host "[Prebuild]: build Folder Created."
+# }else{
+#     Remove-Item -Path ../build -Force -Recurse
+#     New-Item -Path ../ -Name build -ItemType directory -ErrorAction Ignore
+#     Write-Host "[PreBuild]: New build Folder Created."
+# }
+
+# #Rest of the Folders
+# if(!(Test-Path -Path ../app)){
+#     New-Item -Path ../ -Name app -ItemType directory
+#     Write-Host "[Prebuild]: app Folder Created."
+# }
+# if(!(Test-Path -Path ../include)){
+#     New-Item -Path ../ -Name include -ItemType directory
+#     Write-Host "[Prebuild]: include Folder Created."
+# }
+# if(!(Test-Path -Path ../src)){
+#     New-Item -Path ../ -Name src -ItemType directory
+#     Write-Host "[Prebuild]: src Folder Created."
+# }
