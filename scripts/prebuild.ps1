@@ -1,8 +1,8 @@
 #Create the Project Folder Structure
 
 #Get the Root Directory
-[string]$ROOT_DIRECTORY #= (Split-Path (Split-Path $MyInvocation.MyCommand.Path -Parent) -Parent)
-[string]$FILE_DIRECTORY = Split-Path $MyInvocation.MyCommand.Path -Parent
+[string]$ROOT_DIRECTORY
+[string]$FILE_DIRECTORY = $PSScriptRoot
 [int32]$DIR_INFO = (Get-ChildItem -Path $FILE_DIRECTORY | Measure-Object).Count
 #Folders and files to be Created
 [string[]]$MAIN_FOLDERS = @("app", "build", "includes", "scripts", "src")
