@@ -1,5 +1,24 @@
 #Create the Project Folder Structure
 
+#Paraemters
+param(
+    #CMake Varibales
+    [string]$PROJECT_NAME = "PROJECT",
+    [int32]$CMAKE_CXX_STANDARD = 17,
+    [ValidateSet("ON", "OFF")]
+    [string]$CMAKE_CXX_STANDARD_REQUIRED = "ON",
+    [ValidateSet("ON", "OFF")]
+    [string]$CMAKE_CXX_EXTENSIONS = "OFF",
+    [ValidateSet("C", "CPP", "CXX", "CC")]
+    [string]$LANGUAGES = @("C","CXX"),
+    [string]$EXECUTABLE_VARIABLE = "EXECUTABLE_NAME",
+    [string]$EXECUTABLE_NAME = "main",
+    #main File Variables
+    [string]$MAIN_CPP_NAME = "main",
+    [ValidateSet("cpp", "c", "cc", "c++", "cxx")]
+    [string]$MAIN_CPP_EXTENSION = "cpp"
+)#[Url]$GIT_REPOSITORY
+
 #Get the Root Directory
 [string]$ROOT_DIRECTORY
 [string]$FILE_DIRECTORY = $PSScriptRoot
@@ -19,30 +38,34 @@ int main(int argc, char** argv){
 }
 "@
 [string]$CMAKE_VERSION = (Invoke-Expression -Command "cmake --version" | Select-String -Pattern '\d+\.\d+\.\d+').Matches[0]
+[string]$CMAKE_LANGUAJES;$LANGUAGES | ForEach-Object -Process {$CMAKE_LANGUAJES += " "+$_}
+[string]$CMAKE_PROJECT_DATA = "project("+$PROJECT_NAME+" VERSION 1.0.0 "+"LANGUAGES"+$CMAKE_LANGUAJES+")"
+[string]$CMAKE_SET_VARIABLES = "set("+$EXECUTABLE_VARIABLE+" "+$EXECUTABLE_NAME+")"
+[string]$CMAKE_ADD_EXECUTABLE = "add_executable("+'${'+$EXECUTABLE_VARIABLE+"} "+$MAIN_CPP_NAME+"."+$MAIN_CPP_EXTENSION+")"
 [string]$CMAKELISTS_TXT_TEMPLATE_ROOT = 
 @"
 cmake_minimum_required(VERSION $CMAKE_VERSION)
 
 #Project Data
-project(PROJECT VERSION 1.0.0 LANGUAGES C CXX)
+$CMAKE_PROJECT_DATA
 
 #Compiler Options
-set(CMAKE_CXX_STANDARD              17)
-set(CMAKE_CXX_STANDARD_REQUIRED     ON)
-set(CMAKE_CXX_EXTENSIONS            OFF)
+set(CMAKE_CXX_STANDARD              $CMAKE_CXX_STANDARD)
+set(CMAKE_CXX_STANDARD_REQUIRED     $CMAKE_CXX_STANDARD_REQUIRED)
+set(CMAKE_CXX_EXTENSIONS            $CMAKE_CXX_EXTENSIONS)
 
 #Varibales
-set(EXECUTABLE_NAME main)
+$CMAKE_SET_VARIABLES
 
 add_subdirectory(app)
 "@
 [string]$CMAKELISTS_TXT_TEMPLATE_APP = 
-@'
-add_executable(${EXECUTABLE_NAME} main.cpp)
-'@
+@"
+$CMAKE_ADD_EXECUTABLE
+"@
 [string]$README_MD_TEMPLATE = 
 @"
-# New C++ Project
+# $PROJECT_NAME
 ## Created By:
 * ### Vicente Javier Viera Guízar
 "@
