@@ -16,7 +16,12 @@ param(
     #main File Variables
     [string]$MAIN_CPP_NAME = "main",
     [ValidateSet("cpp", "c", "cc", "c++", "cxx")]
-    [string]$MAIN_CPP_EXTENSION = "cpp"
+    [string]$MAIN_CPP_EXTENSION = "cpp",
+    #main File Templates options
+    [switch]$CREATE_CXX_TEMPLATE = [switch]::Present,
+    [switch]$MAIN_USE_STD,
+    [ValidateSet("void", "args")]
+    [string]$MAIN_TEMP = "args"
 )#[Url]$GIT_REPOSITORY
 
 #Get the Root Directory
@@ -27,16 +32,39 @@ param(
 [string[]]$MAIN_FOLDERS = @("app", "build", "includes", "scripts", "src")
 [string[]]$SCRIPTS_FILES = @("build.ps1", "run.ps1")
 #File Configurations
-[string]$MAIN_CPP_TEMPLATE = 
+
+#Main Configurations
+if($CREATE_CXX_TEMPLATE.IsPresent){
+    [string]$MAIN_FUNC_PARAMS
+    [string]$MAIN_CPP_TEMPLATE
+    if($MAIN_TEMP -eq "void"){$MAIN_FUNC_PARAMS = "void"}
+    else{$MAIN_FUNC_PARAMS = "int argc, char** argv"}
+    if(!$MAIN_USE_STD.ToBool()){
+        $MAIN_CPP_TEMPLATE = 
 @"
 #include <iostream>
-    
-int main(int argc, char** argv){
+
+int main($MAIN_FUNC_PARAMS){
     std::cout<<"Hola Crayola xD!!"<<std::endl;
 
     return 0;
 }
 "@
+    }else{
+        $MAIN_CPP_TEMPLATE = 
+@"
+#include <iostream>
+
+using namespace std;
+
+int main($MAIN_FUNC_PARAMS){
+    cout<<"Hola Crayola xD!!"<<endl;
+
+    return 0;
+}
+"@
+    }
+}
 [string]$CMAKE_VERSION = (Invoke-Expression -Command "cmake --version" | Select-String -Pattern '\d+\.\d+\.\d+').Matches[0]
 [string]$CMAKE_LANGUAJES;$LANGUAGES | ForEach-Object -Process {$CMAKE_LANGUAJES += " "+$_}
 [string]$CMAKE_PROJECT_DATA = "project("+$PROJECT_NAME+" VERSION 1.0.0 "+"LANGUAGES"+$CMAKE_LANGUAJES+")"
@@ -96,7 +124,9 @@ if($DIR_INFO -eq 1){
     Write-Host "[Prebuild]: CMakeLists.txt Files Created." -BackgroundColor Green -ForegroundColor Black
 
     #Configure app Folder
-    New-Item -Path $ROOT_DIRECTORY/app -Force -Name main.cpp -ItemType File -Value $MAIN_CPP_TEMPLATE
+    if($CREATE_CXX_TEMPLATE.IsPresent){
+        New-Item -Path $ROOT_DIRECTORY/app -Force -Name main.cpp -ItemType File -Value $MAIN_CPP_TEMPLATE
+    }
     $CMAKELISTS_TXT_TEMPLATE_ROOT | Out-File -FilePath $ROOT_DIRECTORY/CMakeLists.txt -Encoding ascii -Append -NoClobber
     $CMAKELISTS_TXT_TEMPLATE_APP | Out-File -FilePath $ROOT_DIRECTORY/app/CMakeLists.txt -Encoding ascii -Append -NoClobber
     Write-Host "[Prebuild]: Main Files Conigured." -BackgroundColor Green -ForegroundColor Black
