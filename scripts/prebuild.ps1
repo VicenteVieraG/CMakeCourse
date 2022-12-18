@@ -49,7 +49,7 @@ add_executable(${EXECUTABLE_NAME} main.cpp)
 
 
 #This creates a New Project
-if($DIR_INFO){
+if($DIR_INFO -eq 1){
     #It´s an Empty Folder
     $ROOT_DIRECTORY = $FILE_DIRECTORY
 
@@ -87,30 +87,17 @@ if($DIR_INFO){
     Write-Host "[Prebuild]: Git Local Repository Created." -BackgroundColor Green -ForegroundColor Black
 
     #Move prebuild.ps1 to scripts
-    Write-Host "[Prebuild]: Prebuild Completed." -BackgroundColor Yellow -ForegroundColor Black
-    #Move-Item -Path $ROOT_DIRECTORY/prebuild.ps1 -Destination $ROOT_DIRECTORY/scripts
+    Write-Host "[Prebuild]: Prebuild Completed! XD." -BackgroundColor Yellow -ForegroundColor Black
+    Move-Item -Path $ROOT_DIRECTORY/prebuild.ps1 -Destination $ROOT_DIRECTORY/scripts
+}else{
+    #Some Structure is Allready created
+
+    #Root Directory is one level above
+    $ROOT_DIRECTORY = $FILE_DIRECTORY | Split-Path -Parent
+
+    #Reset the Build Folder
+    Remove-Item -Path $ROOT_DIRECTORY/build -Recurse -Force
+    New-Item -Path $ROOT_DIRECTORY -Name build -ItemType Directory -Force
+    Write-Host "[Prebuild]: build Directory Reestarted." -BackgroundColor Green -ForegroundColor Black
+    Write-Host "[Prebuild]: Prebuild Completed! XD." -BackgroundColor Yellow -ForegroundColor Black
 }
-
-#Check if the Folders allready exist
-# if(!(Test-Path -Path ../build)){
-#     New-Item -Path ../ -Name build -ItemType directory
-#     Write-Host "[Prebuild]: build Folder Created."
-# }else{
-#     Remove-Item -Path ../build -Force -Recurse
-#     New-Item -Path ../ -Name build -ItemType directory -ErrorAction Ignore
-#     Write-Host "[PreBuild]: New build Folder Created."
-# }
-
-# #Rest of the Folders
-# if(!(Test-Path -Path ../app)){
-#     New-Item -Path ../ -Name app -ItemType directory
-#     Write-Host "[Prebuild]: app Folder Created."
-# }
-# if(!(Test-Path -Path ../include)){
-#     New-Item -Path ../ -Name include -ItemType directory
-#     Write-Host "[Prebuild]: include Folder Created."
-# }
-# if(!(Test-Path -Path ../src)){
-#     New-Item -Path ../ -Name src -ItemType directory
-#     Write-Host "[Prebuild]: src Folder Created."
-# }
