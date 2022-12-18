@@ -40,6 +40,13 @@ add_subdirectory(app)
 @'
 add_executable(${EXECUTABLE_NAME} main.cpp)
 '@
+[string]$README_MD_TEMPLATE = 
+@"
+# New C++ Project
+## Created By:
+* ### Vicente Javier Viera Guízar
+"@
+
 
 #This creates a New Project
 if($DIR_INFO){
@@ -48,28 +55,36 @@ if($DIR_INFO){
 
     #Create New Folder Structure
     $MAIN_FOLDERS | ForEach-Object -Process {
-        New-Item -Path $ROOT_DIRECTORY -Force -Name $_ -ItemType directory
+        New-Item -Path $ROOT_DIRECTORY -Force -Name $_ -ItemType Directory
     }
     Write-Host "[Prebuild]: Folders Created." -BackgroundColor Green -ForegroundColor Black
 
     #Create the Scripts
     $SCRIPTS_FILES | ForEach-Object -Process {
-        New-Item -Path $ROOT_DIRECTORY/scripts -Force -Name $_ -ItemType file
+        New-Item -Path $ROOT_DIRECTORY/scripts -Force -Name $_ -ItemType File
     }
     Write-Host "[Prebuild]: Scripts Created." -BackgroundColor Green -ForegroundColor Black
 
     #Create the CMakeLists Files For Each Created Folder
     Get-ChildItem -Path $ROOT_DIRECTORY -Attributes D -Exclude scripts,build | ForEach-Object -Process {
         [string]$DIR_NAME = $ROOT_DIRECTORY+"\"+$_.Name
-        New-Item -Path $DIR_NAME -Force -Name CMakeLists.txt -ItemType file
+        New-Item -Path $DIR_NAME -Force -Name CMakeLists.txt -ItemType File
     }
     Write-Host "[Prebuild]: CMakeLists.txt Files Created." -BackgroundColor Green -ForegroundColor Black
 
     #Configure app Folder
-    New-Item -Path $ROOT_DIRECTORY/app -Force -Name main.cpp -ItemType file -Value $MAIN_CPP_TEMPLATE
+    New-Item -Path $ROOT_DIRECTORY/app -Force -Name main.cpp -ItemType File -Value $MAIN_CPP_TEMPLATE
     $CMAKELISTS_TXT_TEMPLATE_ROOT | Out-File -FilePath $ROOT_DIRECTORY/CMakeLists.txt -Encoding ascii -Append -NoClobber
     $CMAKELISTS_TXT_TEMPLATE_APP | Out-File -FilePath $ROOT_DIRECTORY/app/CMakeLists.txt -Encoding ascii -Append -NoClobber
     Write-Host "[Prebuild]: Main Files Conigured." -BackgroundColor Green -ForegroundColor Black
+
+    #Creating New Git Repository
+    New-Item -Path $ROOT_DIRECTORY -Name README.md -ItemType File -Force -Value $README_MD_TEMPLATE
+    New-Item -Path $ROOT_DIRECTORY -Name .gitignore -ItemType File -Force
+    Invoke-Expression -Command "git init"
+    Invoke-Expression -Command "git add ."
+    Invoke-Expression -Command "git commit -m 'First Commit'"
+    Write-Host "[Prebuild]: Git Local Repository Created." -BackgroundColor Green -ForegroundColor Black
 
     #Move prebuild.ps1 to scripts
     Write-Host "[Prebuild]: Prebuild Completed." -BackgroundColor Yellow -ForegroundColor Black
