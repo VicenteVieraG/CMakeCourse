@@ -21,8 +21,15 @@ param(
     [switch]$CREATE_CXX_TEMPLATE = [switch]::Present,
     [switch]$MAIN_USE_STD,
     [ValidateSet("void", "args")]
-    [string]$MAIN_TEMP = "args"
-)#[Url]$GIT_REPOSITORY
+    [string]$MAIN_TEMP = "args",
+    #Git Variables
+    [switch]$GIT_NO,
+    [switch]$GIT_NO_README,
+    [string]$GIT_FIRST_COMMIT_MSG = "First Commit",
+    [switch]$GITIGNORE_NO,
+    [string[]]$GITIGNORE_CONTENT,
+    [uri]$GIT_REPOSITORY
+)
 
 #Get the Root Directory
 [string]$ROOT_DIRECTORY
@@ -65,6 +72,7 @@ int main($MAIN_FUNC_PARAMS){
 "@
     }
 }
+#CMake Configurations
 [string]$CMAKE_VERSION = (Invoke-Expression -Command "cmake --version" | Select-String -Pattern '\d+\.\d+\.\d+').Matches[0]
 [string]$CMAKE_LANGUAJES;$LANGUAGES | ForEach-Object -Process {$CMAKE_LANGUAJES += " "+$_}
 [string]$CMAKE_PROJECT_DATA = "project("+$PROJECT_NAME+" VERSION 1.0.0 "+"LANGUAGES"+$CMAKE_LANGUAJES+")"
@@ -91,13 +99,15 @@ add_subdirectory(app)
 @"
 $CMAKE_ADD_EXECUTABLE
 "@
-[string]$README_MD_TEMPLATE = 
+#Git Configurations
+if($GIT_README.IsPresent){
+    [string]$README_MD_TEMPLATE = 
 @"
 # $PROJECT_NAME
 ## Created By:
 * ### Vicente Javier Viera Guízar
 "@
-
+}
 
 #This creates a New Project
 if($DIR_INFO -eq 1){
@@ -132,16 +142,44 @@ if($DIR_INFO -eq 1){
     Write-Host "[Prebuild]: Main Files Conigured." -BackgroundColor Green -ForegroundColor Black
 
     #Creating New Git Repository
-    New-Item -Path $ROOT_DIRECTORY -Name README.md -ItemType File -Force -Value $README_MD_TEMPLATE
-    New-Item -Path $ROOT_DIRECTORY -Name .gitignore -ItemType File -Force
-    Invoke-Expression -Command "git init"
-    Invoke-Expression -Command "git add ."
-    Invoke-Expression -Command "git commit -m 'First Commit'"
-    Write-Host "[Prebuild]: Git Local Repository Created." -BackgroundColor Green -ForegroundColor Black
-
+    if(!$GIT_NO.ToBool()){
+        if(!$GIT_NO_README.ToBool()){
+            New-Item -Path $ROOT_DIRECTORY -Name README.md -ItemType File -Force -Value $README_MD_TEMPLATE
+        }
+        if(!$GITIGNORE_NO.ToBool()){
+            if($null -ne $GITIGNORE_CONTENT){
+                #Write the Selected Elements in the File
+                [string]$GITIGNORE_EXCLUDES
+                foreach($EXCLUDE IN $GITIGNORE_CONTENT){$GITIGNORE_EXCLUDES += "$EXCLUDE`n"}
+                New-Item -Path $ROOT_DIRECTORY -Name .gitignore -ItemType File -Force -Value $GITIGNORE_EXCLUDES
+            }else{
+                #Just Create a new empty File
+                New-Item -Path $ROOT_DIRECTORY -Name .gitignore -ItemType File -Force
+            }
+        }
+        #Handle First Commands
+        if($null -eq $GIT_REPOSITORY){
+            #Create Just Local Repository
+            Move-Item -Path $ROOT_DIRECTORY/prebuild.ps1 -Destination $ROOT_DIRECTORY/scripts
+            Invoke-Expression -Command "git init"
+            Invoke-Expression -Command "git add ."
+            Invoke-Expression -Command "git commit -m '$GIT_FIRST_COMMIT_MSG'"
+            Invoke-Expression -Command "git branch -M main"
+            Write-Host "[Prebuild]: Git Local Repository Created." -BackgroundColor Green -ForegroundColor Black
+        }else{
+            #Create Repo and Upload to Origin
+            Move-Item -Path $ROOT_DIRECTORY/prebuild.ps1 -Destination $ROOT_DIRECTORY/scripts
+            Invoke-Expression -Command "git init"
+            Invoke-Expression -Command "git add ."
+            Invoke-Expression -Command "git commit -m '$GIT_FIRST_COMMIT_MSG'"
+            Invoke-Expression -Command "git branch -M main"
+            Invoke-Expression -Command "git remote add origin $GIT_REPOSITORY"
+            Invoke-Expression -Command "git push -u origin main"
+            Write-Host "[Prebuild]: Git Remote Repository Created on main branch at: $GIT_REPOSITORY." -BackgroundColor Green -ForegroundColor Black
+        }
+    }
     #Move prebuild.ps1 to scripts
     Write-Host "[Prebuild]: Prebuild Completed! XD." -BackgroundColor Yellow -ForegroundColor Black
-    Move-Item -Path $ROOT_DIRECTORY/prebuild.ps1 -Destination $ROOT_DIRECTORY/scripts
 }else{
     #Some Structure is Allready created
 
