@@ -36,7 +36,7 @@ param(
 [string]$FILE_DIRECTORY = $PSScriptRoot
 [int32]$DIR_INFO = (Get-ChildItem -Path $FILE_DIRECTORY | Measure-Object).Count
 #Folders and files to be Created
-[string[]]$MAIN_FOLDERS = @("app", "build", "includes", "scripts", "src")
+[string[]]$MAIN_FOLDERS = @("app", "build", "includes", "scripts", "src", "controllers")
 [string[]]$SCRIPTS_FILES = @("build.ps1", "run.ps1")
 #File Configurations
 
@@ -108,6 +108,51 @@ if($GIT_README.IsPresent){
 * ### Vicente Javier Viera Guízar
 "@
 }
+#C++ Builder
+[string]$CPP_BUILDER_TEMPLATE_RUN = @"
+#include <windows.h>
+
+//Run all the Scripts
+int main(int argc, char** argv){
+    system("powershell -ExecutionPolicy Bypass -F ./scripts/run.ps1");
+
+    return 0;
+}
+"@
+[string]$CPP_BUILDER_TEMPLATE_BUILD = @"
+#include <windows.h>
+
+//Run all the Scripts
+int main(int argc, char** argv){
+    system("powershell -ExecutionPolicy Bypass -F ./scripts/build.ps1");
+
+    return 0;
+}
+"@
+[string]$CPP_BUILDER_TEMPLATE_PREBUILD = @"
+#include <windows.h>
+
+//Run all the Scripts
+int main(int argc, char** argv){
+    system("powershell -ExecutionPolicy Bypass -F ./scripts/prebuild.ps1");
+
+    return 0;
+}
+"@
+[hashtable]$CPP_COTROLS = @{
+    run = $CPP_BUILDER_TEMPLATE_RUN
+    build = $CPP_BUILDER_TEMPLATE_BUILD
+    prebuild = $CPP_BUILDER_TEMPLATE_PREBUILD
+}
+#Makefile template
+[string]$MAKEFILE_TEMPLATE = @"
+run: build prebuild
+	./controllers/run.exe
+build: prebuild
+	./controllers/build.exe
+prebuild:
+	./controllers/prebuild.exe
+"@
 
 #This creates a New Project
 if($DIR_INFO -eq 1){
@@ -127,7 +172,7 @@ if($DIR_INFO -eq 1){
     Write-Host "[Prebuild]: Scripts Created." -BackgroundColor Green -ForegroundColor Black
 
     #Create the CMakeLists Files For Each Created Folder
-    Get-ChildItem -Path $ROOT_DIRECTORY -Attributes D -Exclude scripts,build | ForEach-Object -Process {
+    Get-ChildItem -Path $ROOT_DIRECTORY -Attributes D -Exclude scripts,build,controllers | ForEach-Object -Process {
         [string]$DIR_NAME = $ROOT_DIRECTORY+"\"+$_.Name
         New-Item -Path $DIR_NAME -Force -Name CMakeLists.txt -ItemType File
     }
@@ -140,6 +185,21 @@ if($DIR_INFO -eq 1){
     $CMAKELISTS_TXT_TEMPLATE_ROOT | Out-File -FilePath $ROOT_DIRECTORY/CMakeLists.txt -Encoding ascii -Append -NoClobber
     $CMAKELISTS_TXT_TEMPLATE_APP | Out-File -FilePath $ROOT_DIRECTORY/app/CMakeLists.txt -Encoding ascii -Append -NoClobber
     Write-Host "[Prebuild]: Main Files Conigured." -BackgroundColor Green -ForegroundColor Black
+
+    #Creating exe file to run commands
+    foreach($PROCESS IN $CPP_COTROLS.Keys){
+        New-Item -Path $ROOT_DIRECTORY -Name "$PROCESS.cpp" -ItemType File -Value $CPP_COTROLS[$PROCESS] -Force
+    }
+    $CPP_COTROLS.Keys | ForEach-Object -Begin {
+        Set-Location -Path $ROOT_DIRECTORY/controllers
+    } -Process {
+        Invoke-Expression -Command "g++ ../$_.cpp -o $_"
+    } -End {
+        Set-Location -Path $ROOT_DIRECTORY
+    }
+    New-Item -Path $ROOT_DIRECTORY -Name Makefile -ItemType File -Value $MAKEFILE_TEMPLATE -Force
+    Remove-Item -Path $ROOT_DIRECTORY/*.cpp
+    Write-Host "[Prebuild]: Building Files created." -BackgroundColor Green -ForegroundColor Black
 
     #Creating New Git Repository
     if(!$GIT_NO.ToBool()){
@@ -168,7 +228,6 @@ if($DIR_INFO -eq 1){
             Write-Host "[Prebuild]: Git Local Repository Created." -BackgroundColor Green -ForegroundColor Black
         }else{
             #Create Repo and Upload to Origin
-            Move-Item -Path $ROOT_DIRECTORY/prebuild.ps1 -Destination $ROOT_DIRECTORY/scripts
             Invoke-Expression -Command "git init"
             Invoke-Expression -Command "git add ."
             Invoke-Expression -Command "git commit -m '$GIT_FIRST_COMMIT_MSG'"
@@ -178,7 +237,7 @@ if($DIR_INFO -eq 1){
             Write-Host "[Prebuild]: Git Remote Repository Created on main branch at: $GIT_REPOSITORY." -BackgroundColor Green -ForegroundColor Black
         }
     }
-    #Move prebuild.ps1 to scripts
+
     Write-Host "[Prebuild]: Prebuild Completed! XD." -BackgroundColor Yellow -ForegroundColor Black
 }else{
     #Some Structure is Allready created
