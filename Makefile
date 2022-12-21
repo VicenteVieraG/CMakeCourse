@@ -1,4 +1,8 @@
 # -*- MakeFile -*-
 
+run: build prebuild
+	./controllers/run.exe
+build: prebuild
+	./controllers/build.exe
 prebuild:
-	./scripts/prebuild.ps1
+	./controllers/prebuild.exe
